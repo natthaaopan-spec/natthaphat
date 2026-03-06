@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Journal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: #ffffff;
+            color: #37352f;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            margin-bottom: 40px;
+            border-bottom: 1px solid #e5e5e5;
+            padding-bottom: 24px;
+        }
+
+        header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.3px;
+        }
+
+        header p {
+            font-size: 14px;
+            color: #626060;
+        }
+
+        .header-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 16px;
+            font-size: 13px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .status-badge.demo {
+            background: #fffacd;
+            color: #8b7d00;
+        }
+
+        .connect-btn {
+            padding: 8px 16px;
+            background: #37352f;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .connect-btn:hover {
+            background: #2a2622;
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 32px;
+            max-width: 480px;
+            width: 100%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .modal-content h2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #37352f;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e5e5e5;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #37352f;
+            box-shadow: 0 0 0 2px rgba(55, 53, 47, 0.1);
+        }
+
+        .form-group small {
+            display: block;
+            color: #626060;
+            font-size: 12px;
+            margin-top: 6px;
+        }
+
+        .error-message {
+            background: #fce4e4;
+            border: 1px solid #f5b4b4;
+            color: #740e0e;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #37352f;
+        }
+
+        .btn-secondary:hover {
+            background: #efefef;
+        }
+
+        .btn-primary {
+            background: #37352f;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2a2622;
+        }
+
+        /* KPI Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        .kpi-card {
+            padding: 20px;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            background: #fafafa;
+            transition: all 0.2s;
+        }
+
+        .kpi-card:hover {
+            border-color: #d3d3d3;
+            background: #ffffff;
+        }
+
+        .kpi-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #626060;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .kpi-value.positive {
+            color: #0f7938;
+        }
+
+        .kpi-value.negative {
+            color: #740e0e;
+        }
+
+        .kpi-subtitle {
+            font-size: 12px;
+            color: #626060;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e5e5e5;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #37352f;
+            transition: width 0.3s ease;
+        }
+
+        /* Charts */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 1024px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-card {
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            padding: 24px;
+            background: #ffffff;
+        }
+
+        .chart-card h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #37352f;
+        }
+
+        /* Table */
+        .table-card {
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            overflow: hidden;
+            background: #ffffff;
+        }
+
+        .table-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #e5e5e5;
+            background: #fafafa;
+        }
+
+        .table-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #37352f;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #fafafa;
+            padding: 12px 24px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: #626060;
+            border-bottom: 1px solid #e5e5e5;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 12px 24px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+            color: #37352f;
+        }
+
+        tbody tr:hover {
+            background: #fafafa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .badge-win {
+            background: #dbeaf0;
+            color: #0f7938;
+        }
+
+        .badge-lose {
+            background: #f5d7d7;
+            color: #740e0e;
+        }
+
+        .badge-buy {
+            background: #e5f0ff;
+            color: #0055cc;
+        }
+
+        .badge-sell {
+            background: #fff0d4;
+            color: #9a4a00;
+        }
+
+        .text-positive {
+            color: #0f7938;
+            font-weight: 500;
+        }
+
+        .text-negative {
+            color: #740e0e;
+            font-weight: 500;
+        }
+
+        /* Stats Row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .stat-box {
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            padding: 16px;
+            background: #fafafa;
+        }
+
+        .stat-box h4 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #626060;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-box .value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            th, td {
+                padding: 10px 12px;
+                font-size: 12px;
+            }
+
+            header h1 {
+                font-size: 24px;
+            }
+        }
+
+        /* Loading */
+        .loading {
+            display: inline-block;
+            width: 4px;
+            height: 4px;
+            background: currentColor;
+            border-radius: 50%;
+            animation: loading 1.4s infinite;
+        }
+
+        @keyframes loading {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div>
+                    <h1>Trading Journal</h1>
+                    <p>Performance Dashboard</p>
+                </div>
+                <button class="connect-btn" onclick="document.getElementById('modal').classList.remove('hidden')">
+                    Connect to Notion
+                </button>
+            </div>
+            <div class="header-status">
+                <span class="status-badge demo" id="statusBadge">⚠ Demo Data</span>
+            </div>
+        </header>
+
+        <!-- Modal -->
+        <div class="modal hidden" id="modal">
+            <div class="modal-content">
+                <h2>Connect to Notion</h2>
+                <div class="error-message" id="errorMessage" style="display: none;"></div>
+
+                <div class="form-group">
+                    <label>Notion API Token</label>
+                    <input type="password" id="notionToken" placeholder="ntn_b1888...">
+                    <small>Get from https://notion.so/my-integrations</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Database ID</label>
+                    <input type="text" id="databaseId" placeholder="31707093e8ce80...">
+                    <small>Copy from your Trading Log URL</small>
+                </div>
+
+                <div class="modal-buttons">
+                    <button class="btn-secondary" onclick="closeModal()">Use Demo</button>
+                    <button class="btn-primary" onclick="connectNotion()">Connect</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">Win Rate</div>
+                <div class="kpi-value" id="winRate">40%</div>
+                <div class="kpi-subtitle" id="winRateDetail">2 wins / 5 trades</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="winRateBar" style="width: 40%;"></div>
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-label">Net P/L</div>
+                <div class="kpi-value positive" id="netPL">+$167.15</div>
+                <div class="kpi-subtitle">5 trades</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-label">Average RR</div>
+                <div class="kpi-value" id="avgRR">5.12</div>
+                <div class="kpi-subtitle">Risk-Reward Ratio</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-label">Current Balance</div>
+                <div class="kpi-value" id="currentBalance">$10,167.15</div>
+                <div class="kpi-subtitle">Starting: $10,000</div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>Equity Curve</h3>
+                <canvas id="equityChart" height="200"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Daily P/L</h3>
+                <canvas id="pnlChart" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Trading Log -->
+        <div class="table-card">
+            <div class="table-header">
+                <h3>Recent Trades</h3>
+            </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Symbol</th>
+                            <th>Side</th>
+                            <th>P/L</th>
+                            <th>RR</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tradingLogBody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-row" style="padding: 24px;">
+                <div class="stat-box">
+                    <h4>Wins</h4>
+                    <div class="value text-positive" id="totalWins">2</div>
+                </div>
+                <div class="stat-box">
+                    <h4>Losses</h4>
+                    <div class="value text-negative" id="totalLosses">3</div>
+                </div>
+                <div class="stat-box">
+                    <h4>Total Gain</h4>
+                    <div class="value text-positive" id="totalGain">$236.43</div>
+                </div>
+                <div class="stat-box">
+                    <h4>Total Loss</h4>
+                    <div class="value text-negative" id="totalLoss">-$69.28</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const demoData = {
+            trades: [
+                { date: 'Mar 3', symbol: 'XAUUSD', position: 'SELL', pnl: 153.15, status: 'WIN', rr: 6.96 },
+                { date: 'Mar 4', symbol: 'XAUUSD', position: 'BUY', pnl: -22.32, status: 'LOSE', rr: -1.01 },
+                { date: 'Mar 4', symbol: 'XAUUSD', position: 'SELL', pnl: -23.32, status: 'LOSE', rr: -1.01 },
+                { date: 'Mar 4', symbol: 'XAUUSD', position: 'BUY', pnl: -23.64, status: 'LOSE', rr: -1.03 },
+                { date: 'Mar 5', symbol: 'XAUUSD', position: 'BUY', pnl: 83.28, status: 'WIN', rr: 3.62 },
+            ]
+        };
+
+        let charts = {};
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        async function connectNotion() {
+            const token = document.getElementById('notionToken').value;
+            const dbId = document.getElementById('databaseId').value;
+            const errorEl = document.getElementById('errorMessage');
+
+            if (!token || !dbId) {
+                errorEl.textContent = 'Please enter Token and Database ID';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch('https://api.notion.com/v1/databases/' + dbId + '/query', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Notion-Version': '2022-06-28',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({}),
+                });
+
+                if (!response.ok) throw new Error(`Error: ${response.status}`);
+
+                const data = await response.json();
+                const trades = data.results.map(page => {
+                    const props = page.properties;
+                    return {
+                        date: props['Date & Time']?.date?.start || 'N/A',
+                        symbol: props['Symbol']?.title?.[0]?.plain_text || 'N/A',
+                        position: props['Position']?.select?.name || 'N/A',
+                        pnl: props['Net P/L ($)']?.number || 0,
+                        status: props['Status']?.select?.name || 'PENDING',
+                        rr: props['RR Result']?.number || 0,
+                    };
+                });
+
+                updateDashboard({ trades });
+                document.getElementById('statusBadge').textContent = '✓ Connected';
+                document.getElementById('statusBadge').className = 'status-badge';
+                closeModal();
+            } catch (error) {
+                errorEl.textContent = error.message;
+                errorEl.style.display = 'block';
+            }
+        }
+
+        function updateDashboard(data) {
+            const trades = data.trades;
+            const wins = trades.filter(t => t.status === 'WIN');
+            const loses = trades.filter(t => t.status === 'LOSE');
+            const totalGain = wins.reduce((sum, t) => sum + t.pnl, 0);
+            const totalLoss = loses.reduce((sum, t) => sum + t.pnl, 0);
+            const netProfit = totalGain + totalLoss;
+            const winRate = trades.length > 0 ? (wins.length / trades.length * 100) : 0;
+            // Fix Average RR calculation - only count winning trades
+            const avgRR = wins.length > 0 ? wins.reduce((sum, t) => sum + t.rr, 0) / wins.length : 0;
+
+            // Update KPIs
+            document.getElementById('winRate').textContent = winRate.toFixed(1) + '%';
+            document.getElementById('winRateDetail').textContent = `${wins.length} wins / ${trades.length} trades`;
+            document.getElementById('winRateBar').style.width = winRate + '%';
+
+            const netPLEl = document.getElementById('netPL');
+            netPLEl.textContent = (netProfit >= 0 ? '+' : '') + '$' + Math.abs(netProfit).toFixed(2);
+            netPLEl.className = 'kpi-value ' + (netProfit >= 0 ? 'positive' : 'negative');
+
+            document.getElementById('avgRR').textContent = avgRR.toFixed(2);
+            document.getElementById('currentBalance').textContent = '$' + (10000 + netProfit).toLocaleString('en-US', { minimumFractionDigits: 2 });
+
+            document.getElementById('totalWins').textContent = wins.length;
+            document.getElementById('totalLosses').textContent = loses.length;
+            document.getElementById('totalGain').textContent = '$' + totalGain.toFixed(2);
+            document.getElementById('totalLoss').textContent = '$' + totalLoss.toFixed(2);
+
+            // Table
+            const tbody = document.getElementById('tradingLogBody');
+            tbody.innerHTML = trades.map(t => `
+                <tr>
+                    <td>${t.date}</td>
+                    <td>${t.symbol}</td>
+                    <td><span class="badge ${t.position === 'BUY' ? 'badge-buy' : 'badge-sell'}">${t.position}</span></td>
+                    <td class="${t.pnl >= 0 ? 'text-positive' : 'text-negative'}">$${t.pnl.toFixed(2)}</td>
+                    <td>${t.rr.toFixed(2)}</td>
+                    <td><span class="badge ${t.status === 'WIN' ? 'badge-win' : 'badge-lose'}">${t.status}</span></td>
+                </tr>
+            `).join('');
+
+            // Charts
+            updateCharts(trades);
+        }
+
+        function updateCharts(trades) {
+            const equityData = [{ x: 0, y: 10000 }];
+            let balance = 10000;
+            trades.forEach((t, i) => {
+                balance += t.pnl;
+                equityData.push({ x: i + 1, y: balance });
+            });
+
+            if (charts.equity) charts.equity.destroy();
+            const equityCtx = document.getElementById('equityChart').getContext('2d');
+            charts.equity = new Chart(equityCtx, {
+                type: 'line',
+                data: {
+                    labels: equityData.map(d => `T${d.x}`),
+                    datasets: [{
+                        label: 'Balance',
+                        data: equityData.map(d => d.y),
+                        borderColor: '#37352f',
+                        backgroundColor: 'rgba(55, 53, 47, 0.05)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 2,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#37352f',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { 
+                            beginAtZero: false,
+                            grid: { color: '#f0f0f0', drawBorder: false },
+                            ticks: { color: '#626060', font: { size: 11 } }
+                        },
+                        x: { grid: { color: '#f0f0f0', drawBorder: false }, ticks: { color: '#626060', font: { size: 11 } } }
+                    }
+                }
+            });
+
+            const dailyPnL = {};
+            trades.forEach(t => {
+                const date = t.date.split(' ')[0];
+                dailyPnL[date] = (dailyPnL[date] || 0) + t.pnl;
+            });
+
+            if (charts.pnl) charts.pnl.destroy();
+            const pnlCtx = document.getElementById('pnlChart').getContext('2d');
+            charts.pnl = new Chart(pnlCtx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(dailyPnL),
+                    datasets: [{
+                        label: 'Daily P/L',
+                        data: Object.values(dailyPnL),
+                        backgroundColor: Object.values(dailyPnL).map(v => v >= 0 ? '#0f7938' : '#740e0e'),
+                        borderRadius: 2,
+                        borderWidth: 0,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(55, 53, 47, 0.9)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff',
+                            borderColor: '#e5e5e5',
+                            borderWidth: 1,
+                            padding: 8,
+                            titleFont: { size: 12, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            grid: { color: '#f0f0f0', drawBorder: false, drawTicks: false }, 
+                            ticks: { color: '#626060', font: { size: 11 }, padding: 8 },
+                            border: { display: false }
+                        },
+                        x: { 
+                            grid: { display: false }, 
+                            ticks: { color: '#626060', font: { size: 11 } },
+                            border: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Init
+        updateDashboard(demoData);
+    </script>
+</body>
+</html>
